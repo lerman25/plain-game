@@ -71,8 +71,18 @@ class Player(pygame.sprite.Sprite):
             self.surf = pygame.image.load('image/car21.png').convert()
         self.surf.set_colorkey((255, 255, 255), RLEACCEL)
         self.rect = self.surf.get_rect()
+        print(self.rect.size)
         self.rect.y = SCREEN_HEIGHT / 2  # for now start from middle
-
+        self.health=100
+    def draw_health(self, surf):
+        if(self.health!=0):
+            health_rect = pygame.Rect(0, 0, 23, 7)
+        else:
+            health_rect = pygame.Rect(0, 0, 0, 0)
+        health_rect.midbottom = self.rect.centerx, (self.rect.bottom)
+        max_health = 100
+        draw_health_bar(surf, health_rect.topleft, health_rect.size, 
+                (0, 0, 0), (255, 0, 0), (0, 255, 0), self.health/max_health) 
     # Move the sprite based on keypresses
     def update(self, pressed_keys, player2=False):
         if not player2:
@@ -106,8 +116,8 @@ class Player(pygame.sprite.Sprite):
             self.rect.right = SCREEN_WIDTH
         if self.rect.top <= 0:
             self.rect.top = 0
-        elif self.rect.bottom >= SCREEN_HEIGHT:
-            self.rect.bottom = SCREEN_HEIGHT
+        elif self.rect.bottom >= SCREEN_HEIGHT - groundheight+10:
+            self.rect.bottom = SCREEN_HEIGHT - groundheight+10
 
 
 # Define the enemy object extending pygame.sprite.Sprite
@@ -207,6 +217,13 @@ class Cloud(pygame.sprite.Sprite):
             self.kill()
 
 
+def draw_health_bar(surf, pos, size, borderC, backC, healthC, progress):
+    pygame.draw.rect(surf, backC, (*pos, *size))
+    pygame.draw.rect(surf, borderC, (*pos, *size), 1)
+    innerPos  = (pos[0]+1, pos[1]+1)
+    innerSize = ((size[0]-2) * progress, size[1]-2)
+    rect = (round(innerPos[0]), round(innerPos[1]), round(innerSize[0]), round(innerSize[1]))
+    pygame.draw.rect(surf, healthC, rect)
 # Setup for sounds, defaults are good
 pygame.mixer.init()
 
@@ -228,7 +245,11 @@ pygame.time.set_timer(ADDBITCOIN, 1000)
 # create needed items
 
 player = Player()
+player1_group = pygame.sprite.Group()
+player1_group.add(player)
 player2 = Player(player2=True)
+player2_group = pygame.sprite.Group()
+player2_group.add(player2)
 ground = Ground()
 
 # Create groups to hold enemy sprites, cloud sprites, and all sprites
@@ -271,9 +292,11 @@ sysfont = pygame.font.get_default_font()
 font = font = pygame.font.SysFont(None, 48)
 drawText('Score: ', font, screen, (10), (10))
 pygame.display.update()
-
+progress = 1
+maxwidth= 20
 while running:
     # Look at every event in the queue
+    # DrawBar(screen,(500,500),(200,20),(0,0,0),(0,128,0),0.5)
     for event in pygame.event.get():
         # Did the user hit a key?
         if event.type == KEYDOWN:
@@ -308,8 +331,8 @@ while running:
 
     # Get the set of keys pressed and check for user input
     pressed_keys = pygame.key.get_pressed()
-    player.update(pressed_keys)
-    player2.update(pressed_keys, player2=True)
+    player1_group.update(pressed_keys)
+    player2_group.update(pressed_keys, player2=True)
     # Update the position of our enemies and clouds
     enemies.update()
     benefits.update()
@@ -326,13 +349,24 @@ while running:
         screen.blit(entity.surf, entity.rect)
     for entity in benefits:
         screen.blit(entity.surf, entity.rect)
-    screen.blit(player.surf, player.rect)
-    screen.blit(player2.surf, player2.rect)
-    screen.blit(ground.surf, ground.rect)
+    for entity in player1_group:
+        screen.blit(entity.surf, entity.rect)
+    for entity in player2_group:
+        screen.blit(entity.surf, entity.rect)
+    for entity in ground_group:
+        screen.blit(entity.surf, entity.rect)
+    # screen.blit(player.surf, player.rect)
+    # screen.blit(player2.surf, player2.rect)
+    # screen.blit(ground.surf, ground.rect)
+    player.draw_health(screen)
+    player2.draw_health(screen)
                         ##player 1 collision with enemy##
     if pygame.sprite.spritecollide(player, enemies, dokill=True) and not ignorecollision:
         # If so, remove the player
-        player.score -= COLLIDE_ENEMY_POINTS
+        # player.score -= COLLIDE_ENEMY_POINTS
+        player.health-=10
+        if player.health <=0:
+                player.kill()
 
         # Stop any moving sounds and play the collision sound
         # move_up_sound.stop()
@@ -342,17 +376,24 @@ while running:
         # running = False
 
 
-    if pygame.sprite.spritecollide(player, ground_group, dokill=False):
+    if pygame.sprite.spritecollide (player, ground_group, dokill=False):
         player.ground_counter += 1
         if player.ground_counter >= 10:
-            player.score -= GROUND_PENALTY
+            # player.score -= GROUND_PENALTY
             player.ground_counter = 0
+            player.health-=10
+            if player.health <=0:
+                player.kill()
 
 
             ##player 2 collision with enemy##
     if pygame.sprite.spritecollide(player2, enemies, dokill=True) and not ignorecollision:
         # If so, remove from the player counter
-            player2.score -= COLLIDE_ENEMY_POINTS
+            # player2.score -= COLLIDE_ENEMY_POINTS
+            player2.health-=10
+            if player2.health <=0:
+                player2.kill()
+
 
         # Stop any moving sounds and play the collision sound
         # move_up_sound.stop()
@@ -364,8 +405,12 @@ while running:
     if pygame.sprite.spritecollide(player2, ground_group, dokill=False):
         player2.ground_counter += 1
         if player2.ground_counter >= 10:
-            player2.score -= GROUND_PENALTY
+            # player2.score -= GROUND_PENALTY
+            player2.health-=10
             player2.ground_counter = 0
+            print(player2.health)
+            if player2.health <=0:
+                player2.kill()
 
     if benefits:
         for bit in pygame.sprite.spritecollide(player, benefits, dokill=True):
