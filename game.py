@@ -18,6 +18,9 @@ from pygame.locals import (
     QUIT,
 )
 
+# Initialize pygame
+pygame.init()
+
 #debug fields
 ignorecollision = True
 allowaddenemy = False
@@ -27,8 +30,10 @@ allowaddenemy = False
 #pygame.display.set_mode((screenobejct.current_w, screenobejct.current_h))
 #pygame.display.set_mode((0,0),pygame.FULLSCREEN)
 # Define constants for the screen width and height
-SCREEN_WIDTH = 1200
-SCREEN_HEIGHT = 800
+info = pygame.display.Info()
+print(info)
+SCREEN_WIDTH  = info.current_w
+SCREEN_HEIGHT = info.current_h
 
 
 # Define the Player object extending pygame.sprite.Sprite
@@ -115,9 +120,6 @@ class BitCoin(pygame.sprite.Sprite):
 
 # Setup for sounds, defaults are good
 pygame.mixer.init()
-
-# Initialize pygame
-pygame.init()
 
 # Setup the clock for a decent framerate
 clock = pygame.time.Clock()
