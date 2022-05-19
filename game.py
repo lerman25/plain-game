@@ -23,11 +23,16 @@ from pygame.locals import (
 
 )
 
+
+=======
+#GLOBAL DEFINES
+
 TEXTCOLOR = (255, 255, 255)
 BACKGROUND_COLOR = (135, 206, 250)
 COLLIDE_ENEMY_POINTS = 10  # losing points when colliding with an enemy
 COLLISION_DELTA = 10  # amount of frames to allow player to not lose points since last collision with ground
 GROUND_PENALTY = 10
+NUM_OF_PLAYER_IMGS = 10
 
 def drawText(text, font, surface, x, y):
     textobj = font.render(text, 1, TEXTCOLOR)
@@ -53,10 +58,9 @@ allowaddenemy = True
 # pygame.display.set_mode((0,0),pygame.FULLSCREEN)
 # Define constants for the screen width and height
 info = pygame.display.Info()
-print(info)
+#print(info)
 SCREEN_WIDTH = info.current_w
 SCREEN_HEIGHT = info.current_h
-
 
 # Define the Player object extending pygame.sprite.Sprite
 # Instead of a surface, we use an image for a better looking sprite
@@ -65,12 +69,14 @@ class Player(pygame.sprite.Sprite):
         self.ground_counter = COLLISION_DELTA
         self.score = 0
         super(Player, self).__init__()
+        self.state = 0
         if not player2:
-            self.surf = pygame.image.load('image/car1.png').convert()
+            self.surf = player1_off_arr[0] # initial state
         if player2:
             self.surf = pygame.image.load('image/car21.png').convert()
         self.surf.set_colorkey((255, 255, 255), RLEACCEL)
         self.rect = self.surf.get_rect()
+
         print(self.rect.size)
         self.rect.y = SCREEN_HEIGHT / 2  # for now start from middle
         self.health=100
@@ -83,20 +89,35 @@ class Player(pygame.sprite.Sprite):
         max_health = 100
         draw_health_bar(surf, health_rect.topleft, health_rect.size, 
                 (0, 0, 0), (255, 0, 0), (0, 255, 0), self.health/max_health) 
+
+
     # Move the sprite based on keypresses
     def update(self, pressed_keys, player2=False):
         if not player2:
             if pressed_keys[K_UP]:
                 self.rect.move_ip(0, -5)
+
+                #self.state = max(0, self.state - 1)
+                self.state = max(0, self.state - 1)
+
                 # move_up_sound.play()
             else:
                 # if pressed_keys[K_DOWN]:
                 self.rect.move_ip(0, 5)
+
+                #self.state = max(9, self.state + 1)
+                self.state = min(self.state + 1, NUM_OF_PLAYER_IMGS - 1)
+                print('state is ' + str(self.state))
                 # move_down_sound.play()
             if pressed_keys[K_LEFT]:
                 self.rect.move_ip(-5, 0)
             if pressed_keys[K_RIGHT]:
                 self.rect.move_ip(5, 0)
+            # update the player surface and rectangle
+            self.surf = player1_off_arr[self.state]
+
+
+
         if player2:
             if pressed_keys[K_w]:
                 self.rect.move_ip(0, -5)
@@ -217,6 +238,7 @@ class Cloud(pygame.sprite.Sprite):
             self.kill()
 
 
+
 def draw_health_bar(surf, pos, size, borderC, backC, healthC, progress):
     pygame.draw.rect(surf, backC, (*pos, *size))
     pygame.draw.rect(surf, borderC, (*pos, *size), 1)
@@ -224,6 +246,7 @@ def draw_health_bar(surf, pos, size, borderC, backC, healthC, progress):
     innerSize = ((size[0]-2) * progress, size[1]-2)
     rect = (round(innerPos[0]), round(innerPos[1]), round(innerSize[0]), round(innerSize[1]))
     pygame.draw.rect(surf, healthC, rect)
+
 # Setup for sounds, defaults are good
 pygame.mixer.init()
 
@@ -233,6 +256,15 @@ clock = pygame.time.Clock()
 # Create the screen object
 # The size is determined by the constant SCREEN_WIDTH and SCREEN_HEIGHT
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+
+
+#images
+player1_off_arr = []
+for i in range(NUM_OF_PLAYER_IMGS):
+    print(i)
+    curr_player_off_img = pygame.transform.scale(pygame.image.load('image/player1_off' + str(i) + '.png'), (50, 100)).convert()
+    player1_off_arr.append(curr_player_off_img)
+    #print(player1_off_arr)
 
 # Create custom events for adding a new enemy and cloud
 ADDENEMY = pygame.USEREVENT + 1
@@ -331,8 +363,10 @@ while running:
 
     # Get the set of keys pressed and check for user input
     pressed_keys = pygame.key.get_pressed()
+
     player1_group.update(pressed_keys)
     player2_group.update(pressed_keys, player2=True)
+
     # Update the position of our enemies and clouds
     enemies.update()
     benefits.update()
@@ -349,6 +383,7 @@ while running:
         screen.blit(entity.surf, entity.rect)
     for entity in benefits:
         screen.blit(entity.surf, entity.rect)
+
     for entity in player1_group:
         screen.blit(entity.surf, entity.rect)
     for entity in player2_group:
@@ -368,12 +403,14 @@ while running:
         if player.health <=0:
                 player.kill()
 
+
         # Stop any moving sounds and play the collision sound
         # move_up_sound.stop()
         # move_down_sound.stop()
 
         # Stop the loop
         # running = False
+
 
 
     if pygame.sprite.spritecollide (player, ground_group, dokill=False):
@@ -386,6 +423,7 @@ while running:
                 player.kill()
 
 
+
             ##player 2 collision with enemy##
     if pygame.sprite.spritecollide(player2, enemies, dokill=True) and not ignorecollision:
         # If so, remove from the player counter
@@ -393,6 +431,7 @@ while running:
             player2.health-=10
             if player2.health <=0:
                 player2.kill()
+
 
 
         # Stop any moving sounds and play the collision sound
