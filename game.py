@@ -292,7 +292,7 @@ for i in range(NUM_OF_PLAYER_IMGS):
     curr_player2_off_img = pygame.transform.scale(pygame.image.load('image/player2_off' + str(i) + '.png'),
                                                   (50, 100)).convert()
     player2_off_arr.append(curr_player2_off_img)
-    curr_player2_on_img = pygame.transform.scale(pygame.image.load('image/player1_on' + str(i) + '.png'),
+    curr_player2_on_img = pygame.transform.scale(pygame.image.load('image/player2_on' + str(i) + '.png'),
                                                  (50, 100)).convert()
     player2_on_arr.append(curr_player2_on_img)
 
