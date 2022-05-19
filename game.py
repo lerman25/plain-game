@@ -24,6 +24,8 @@ from pygame.locals import (
 )
 TEXTCOLOR = (255,255,255)
 BACKGROUND_COLOR = (135, 206, 250)
+COLLIDE_ENEMY_POINTS = 10 #losing points when colliding with an enemy
+COLLISION_DELTA = 150 #amount of frames to allow player to not lose points since last collision with ground
 
 def drawText(text, font, surface, x, y):
     textobj = font.render(text, 1, TEXTCOLOR)
@@ -36,6 +38,7 @@ pygame.init()
 #debug fields
 #global variables:
 groundheight = 100
+current_frame_cnt = 0
 
 # debug fields
 ignorecollision = False
@@ -56,6 +59,7 @@ SCREEN_HEIGHT = info.current_h
 # Instead of a surface, we use an image for a better looking sprite
 class Player(pygame.sprite.Sprite):
     def __init__(self,player2=False):
+        self.last_collision_time = -1
         super(Player, self).__init__()
         if not player2:
             self.surf = pygame.image.load('image/car1.png').convert()
@@ -262,6 +266,7 @@ drawText('Score: ', font, screen, (10), (10))
 pygame.display.update()
 
 while running:
+    current_frame_cnt +=1
     # Look at every event in the queue
     for event in pygame.event.get():
         # Did the user hit a key?
@@ -298,7 +303,7 @@ while running:
     # Get the set of keys pressed and check for user input
     pressed_keys = pygame.key.get_pressed()
     player.update(pressed_keys)
-    player2.update(pressed_keys,player2=True)
+    player2.update(pressed_keys, player2=True)
     # Update the position of our enemies and clouds
     enemies.update()
     benefits.update()
@@ -314,22 +319,25 @@ while running:
         screen.blit(entity.surf, entity.rect)
     for entity in benefits:
         screen.blit(entity.surf, entity.rect)
-    screen.blit(player.surf,player.rect)
-    screen.blit(player2.surf,player2.rect)
-    # Check if any enemies have collided with the player
+    screen.blit(player.surf, player.rect)
+    screen.blit(player2.surf, player2.rect)
+                                ##player 1 collision with enemy##
     if pygame.sprite.spritecollideany(player, enemies) and not ignorecollision:
         # If so, remove the player
-        player.kill()
+        if player.last_collision_time == -1 or current_frame_cnt > player.last_collision_time and current_frame_cnt - player.last_collision_time >= COLLISION_DELTA:
+            counter1 -= COLLIDE_ENEMY_POINTS
 
         # Stop any moving sounds and play the collision sound
         # move_up_sound.stop()
         # move_down_sound.stop()
 
         # Stop the loop
-        running = False
+        #running = False
+                                ##player 2 collision with enemy##
     if pygame.sprite.spritecollideany(player2, enemies) and not ignorecollision:
-    # If so, remove the player
-        player2.kill()
+    # If so, remove from the player counter
+        if player.last_collision_time == -1 or current_frame_cnt > player.last_collision_time and current_frame_cnt - player.last_collision_time >= COLLISION_DELTA:
+            counter2 -= COLLIDE_ENEMY_POINTS
 
         # Stop any moving sounds and play the collision sound
         # move_up_sound.stop()
@@ -337,12 +345,12 @@ while running:
         # collision_sound.play()
 
         # Stop the loop
-        running = False
+        #running = False
     if(benefits):
-        for bit in pygame.sprite.spritecollide(player,benefits,dokill=True):
+        for bit in pygame.sprite.spritecollide(player, benefits, dokill=True):
             collision_sound.play()
             counter1+=int(bit.get_coin()/10)
-        for bit in pygame.sprite.spritecollide(player2,benefits,dokill=True):
+        for bit in pygame.sprite.spritecollide(player2, benefits, dokill=True):
             collision_sound.play()
             counter2+=int(bit.get_coin()/10)
     largeFont = pygame.font.SysFont('comicsans', 30) # Font object
