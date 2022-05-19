@@ -69,6 +69,7 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, player2=False):
         self.ground_counter = COLLISION_DELTA
         self.score = 0
+        self.alive = True
         self.fire_is_on = True
         super(Player, self).__init__()
         self.state = 0
@@ -133,6 +134,7 @@ class Player(pygame.sprite.Sprite):
                 self.rect.move_ip(0, -5)
                 self.state = max(0, self.state - 1)
                 self.fire_is_on = True
+
                 # move_up_sound.play()
             else:
                 # if pressed_keys[K_s]:
@@ -149,6 +151,8 @@ class Player(pygame.sprite.Sprite):
                 self.surf = player2_on_arr[self.state]
             else:
                 self.surf = player2_off_arr[self.state]
+            self.surf.set_colorkey((255, 255, 255), RLEACCEL)
+
 
         # Keep player on the screen
         if self.rect.left < 0:
@@ -342,12 +346,12 @@ all_sprites.add(player2)
 # move_up_sound = pygame.mixer.Sound("Rising_putter.ogg")
 # move_down_sound = pygame.mixer.Sound("Falling_putter.ogg")
 collision_sound = pygame.mixer.Sound("music\Collision.ogg")
-
+boom_sound = pygame.mixer.Sound("music//boom.ogg")
 # Set the base volume for all sounds
 # move_up_sound.set_volume(0.5)
 # move_down_sound.set_volume(0.5)
 collision_sound.set_volume(0.5)
-
+boom_sound.set_volume(0.5)
 # Variable to keep our main loop running
 running = True
 
@@ -427,12 +431,14 @@ while running:
     player.draw_health(screen)
     player2.draw_health(screen)
     ##player 1 collision with enemy##
-    if pygame.sprite.spritecollide(player, enemies, dokill=True) and not ignorecollision:
+    if pygame.sprite.spritecollide(player, enemies, dokill=player.alive) and not ignorecollision:
         # If so, remove the player
         # player.score -= COLLIDE_ENEMY_POINTS
         player.health -= 10
-        if player.health <= 0:
+        if player.health <= 0 and player.alive:
+            boom_sound.play()
             player.kill()
+            player.alive = False
 
         # Stop any moving sounds and play the collision sound
         # move_up_sound.stop()
@@ -447,16 +453,20 @@ while running:
             # player.score -= GROUND_PENALTY
             player.ground_counter = 0
             player.health -= 10
-            if player.health <= 0:
+            if player.health <= 0 and player.alive:
+                boom_sound.play()
                 player.kill()
+                player.alive = False
 
             ##player 2 collision with enemy##
-    if pygame.sprite.spritecollide(player2, enemies, dokill=True) and not ignorecollision:
+    if pygame.sprite.spritecollide(player2, enemies, dokill=player2.alive) and not ignorecollision:
         # If so, remove from the player counter
         # player2.score -= COLLIDE_ENEMY_POINTS
         player2.health -= 10
-        if player2.health <= 0:
+        if player2.health <= 0 and player2.alive:
+            boom_sound.play()
             player2.kill()
+            player2.alive = False
 
     # Stop any moving sounds and play the collision sound
     # move_up_sound.stop()
@@ -472,21 +482,25 @@ while running:
             player2.health -= 10
             player2.ground_counter = 0
             print(player2.health)
-            if player2.health <= 0:
+            if player2.health <= 0 and player2.alive:
+                boom_sound.play()
                 player2.kill()
+                player2.alive = False
 
     if benefits:
-        for bit in pygame.sprite.spritecollide(player, benefits, dokill=True):
-            collision_sound.play()
-            player.score += int(bit.get_coin() / 10)
-        for bit in pygame.sprite.spritecollide(player2, benefits, dokill=True):
-            collision_sound.play()
-            player2.score += int(bit.get_coin() / 10)
+        for bit in pygame.sprite.spritecollide(player, benefits, dokill=player.alive):
+            if player.alive:
+                collision_sound.play()
+                player.score += int(bit.get_coin() / 10)
+        for bit in pygame.sprite.spritecollide(player2, benefits, dokill=player2.alive):
+            if player2.alive:
+                collision_sound.play()
+                player2.score += int(bit.get_coin() / 10)
     largeFont = pygame.font.SysFont('comicsans', 30)  # Font object
-    text = largeFont.render('Player 1 Score: ' + str(player.score), 1, (0, 0, 0))  # create our text
+    text = largeFont.render('Player 1 Score: ' + str(player.score), 1, (255, 255, 255))  # create our text
     screen.blit(text, (0, 0))
     largeFont = pygame.font.SysFont('comicsans', 30)  # Font object
-    text = largeFont.render('Player 2 Score: ' + str(player2.score), 1, (0, 0, 0))  # create our text
+    text = largeFont.render('Player 2 Score: ' + str(player2.score), 1, (255, 255, 255))  # create our text
     screen.blit(text, (0, 500))
     # Flip everything to the display
     pygame.display.flip()
