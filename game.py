@@ -21,18 +21,21 @@ from pygame.locals import (
 # Initialize pygame
 pygame.init()
 
-#debug fields
-ignorecollision = True
+#global variables:
+groundheight = 100
+
+# debug fields
+ignorecollision = False
 allowaddenemy = False
 
-#screen information
-#screenobejct = pygame.display.Info()
-#pygame.display.set_mode((screenobejct.current_w, screenobejct.current_h))
-#pygame.display.set_mode((0,0),pygame.FULLSCREEN)
+# screen information
+# screenobejct = pygame.display.Info()
+# pygame.display.set_mode((screenobejct.current_w, screenobejct.current_h))
+# pygame.display.set_mode((0,0),pygame.FULLSCREEN)
 # Define constants for the screen width and height
 info = pygame.display.Info()
 print(info)
-SCREEN_WIDTH  = info.current_w
+SCREEN_WIDTH = info.current_w
 SCREEN_HEIGHT = info.current_h
 
 
@@ -44,16 +47,16 @@ class Player(pygame.sprite.Sprite):
         self.surf = pygame.image.load('image/car1.png').convert()
         self.surf.set_colorkey((255, 255, 255), RLEACCEL)
         self.rect = self.surf.get_rect()
-        self.topleft = (50, 50)
+        self.rect.y = SCREEN_HEIGHT/2 #for now start from middle
 
     # Move the sprite based on keypresses
     def update(self, pressed_keys):
         if pressed_keys[K_UP]:
             self.rect.move_ip(0, -5)
-            #move_up_sound.play()
+            # move_up_sound.play()
         if pressed_keys[K_DOWN]:
             self.rect.move_ip(0, 5)
-            #move_down_sound.play()
+            # move_down_sound.play()
         if pressed_keys[K_LEFT]:
             self.rect.move_ip(-5, 0)
         if pressed_keys[K_RIGHT]:
@@ -98,15 +101,16 @@ class Enemy(pygame.sprite.Sprite):
 # Use an image for a better looking sprite
 class BitCoin(pygame.sprite.Sprite):
     image = pygame.image.load('image/bitcoin1.png')
-    def __init__(self):
+
+    def __init__(self, bitcoin_size = 40):
         super(BitCoin, self).__init__()
-        self.surf = pygame.transform.scale(pygame.image.load('image/bitcoin1.png'), (20, 20)).convert()
+        self.surf = pygame.transform.scale(pygame.image.load('image/bitcoin1.png'), (bitcoin_size, bitcoin_size)).convert()
         self.surf.set_colorkey((255, 255, 255), RLEACCEL)
         # The starting position is randomly generated
         self.rect = self.surf.get_rect(
             center=(
                 random.randint(SCREEN_WIDTH + 20, SCREEN_WIDTH + 100),
-                random.randint(0, SCREEN_HEIGHT-50),
+                random.randint(new_coin_size, SCREEN_HEIGHT - groundheight - bitcoin_size),
             )
         )
 
@@ -114,9 +118,50 @@ class BitCoin(pygame.sprite.Sprite):
     # Remove it when it passes the left edge of the screen
     def update(self):
         self.rect.move_ip(-5, 0)
-        if self.rect.bottom > SCREEN_HEIGHT:
+        if self.rect.right < 0:
             self.kill()
 
+
+# Define the Ground object extending pygame.sprite.Sprite
+# Use an image for a better looking sprite
+class Ground(pygame.sprite.Sprite):
+
+    def __init__(self):
+        self.image = pygame.transform.scale(pygame.image.load('image/ground1.png'), (SCREEN_WIDTH, groundheight))
+        super(Ground, self).__init__()
+        self.surf = self.image.convert()
+        self.surf.set_colorkey((255, 255, 255), RLEACCEL)
+        # The starting position is randomly generated
+        self.rect = self.image.get_rect()
+        self.rect.x = 0
+        self.rect.y = SCREEN_HEIGHT - groundheight
+
+    # Move the cloud based on a constant speed
+    # Remove it when it passes the left edge of the screen
+    def update(self):
+        return
+
+# Define the cloud object by extending pygame.sprite.Sprite
+# Use an image for a better-looking sprite
+class Cloud(pygame.sprite.Sprite):
+    def __init__(self):
+        super(Cloud, self).__init__()
+        self.surf = pygame.image.load("image/cloud.png").convert()
+        self.surf.set_colorkey((0, 0, 0), RLEACCEL)
+        # The starting position is randomly generated
+        self.rect = self.surf.get_rect(
+            center=(
+                random.randint(SCREEN_WIDTH + 20, SCREEN_WIDTH + 100),
+                random.randint(groundheight, SCREEN_HEIGHT),
+            )
+        )
+
+    # Move the cloud based on a constant speed
+    # Remove the cloud when it passes the left edge of the screen
+    def update(self):
+        self.rect.move_ip(-5, 0)
+        if self.rect.right < 0:
+            self.kill()
 
 # Setup for sounds, defaults are good
 pygame.mixer.init()
@@ -131,11 +176,15 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 # Create custom events for adding a new enemy and cloud
 ADDENEMY = pygame.USEREVENT + 1
 pygame.time.set_timer(ADDENEMY, 250)
-ADDBITCOIN = pygame.USEREVENT + 2
+ADDCLOUD = pygame.USEREVENT + 2
+pygame.time.set_timer(ADDCLOUD, 1000)
+ADDBITCOIN = pygame.USEREVENT + 3
 pygame.time.set_timer(ADDBITCOIN, 1000)
 
-# Create our 'player'
+#create needed items
+
 player = Player()
+ground = Ground()
 
 # Create groups to hold enemy sprites, cloud sprites, and all sprites
 # - enemies is used for collision detection and position updates
@@ -143,26 +192,30 @@ player = Player()
 # - all_sprites isused for rendering
 enemies = pygame.sprite.Group()
 benefits = pygame.sprite.Group()
+clouds = pygame.sprite.Group()
+
+enemies.add(ground)
 all_sprites = pygame.sprite.Group()
+all_sprites.add(ground)
 all_sprites.add(player)
 
 # Load and play our background music
 # Sound source: http://ccmixter.org/files/Apoxode/59262
 # License: https://creativecommons.org/licenses/by/3.0/
-#pygame.mixer.music.load("Apoxode_-_Electric_1.mp3")
-#pygame.mixer.music.play(loops=-1)
+# pygame.mixer.music.load("Apoxode_-_Electric_1.mp3")
+# pygame.mixer.music.play(loops=-1)
 
 # Load all our sound files
 # Sound sources: Jon Fincher
-#move_up_sound = pygame.mixer.Sound("Rising_putter.ogg")
-#move_down_sound = pygame.mixer.Sound("Falling_putter.ogg")
-#collision_sound = pygame.mixer.Sound("Collision.ogg")
+# move_up_sound = pygame.mixer.Sound("Rising_putter.ogg")
+# move_down_sound = pygame.mixer.Sound("Falling_putter.ogg")
+# collision_sound = pygame.mixer.Sound("Collision.ogg")
 
 
 # Set the base volume for all sounds
-#move_up_sound.set_volume(0.5)
-#move_down_sound.set_volume(0.5)
-#collision_sound.set_volume(0.5)
+# move_up_sound.set_volume(0.5)
+# move_down_sound.set_volume(0.5)
+# collision_sound.set_volume(0.5)
 
 # Variable to keep our main loop running
 running = True
@@ -188,10 +241,17 @@ while running:
             enemies.add(new_enemy)
             all_sprites.add(new_enemy)
 
+        elif event.type == ADDCLOUD:
+            #Create the new cloud and add it to sprite groups
+            new_cloud = Cloud()
+            clouds.add(new_cloud)
+            all_sprites.add(new_cloud)
+
         # Should we add a new cloud?
         elif event.type == ADDBITCOIN:
             # Create the new cloud, and add it to our sprite groups
-            new_bitcoin = BitCoin()
+            new_coin_size = random.randint(10, 50)
+            new_bitcoin = BitCoin(new_coin_size)
             benefits.add(new_bitcoin)
             all_sprites.add(new_bitcoin)
 
@@ -202,6 +262,7 @@ while running:
     # Update the position of our enemies and clouds
     enemies.update()
     benefits.update()
+    clouds.update()
 
     # Fill the screen with sky blue
     screen.fill((135, 206, 250))
@@ -209,16 +270,16 @@ while running:
     # Draw all our sprites
     for entity in all_sprites:
         screen.blit(entity.surf, entity.rect)
-
+    screen.blit(player.surf,player.rect)
     # Check if any enemies have collided with the player
     if pygame.sprite.spritecollideany(player, enemies) and not ignorecollision:
         # If so, remove the player
         player.kill()
 
         # Stop any moving sounds and play the collision sound
-        #move_up_sound.stop()
-        #move_down_sound.stop()
-        #collision_sound.play()
+        # move_up_sound.stop()
+        # move_down_sound.stop()
+        # collision_sound.play()
 
         # Stop the loop
         running = False
