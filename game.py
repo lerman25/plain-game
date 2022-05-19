@@ -23,6 +23,7 @@ from pygame.locals import (
 
 )
 TEXTCOLOR = (255,255,255)
+BACKGROUND_COLOR = (135, 206, 250)
 
 def drawText(text, font, surface, x, y):
     textobj = font.render(text, 1, TEXTCOLOR)
@@ -38,7 +39,7 @@ groundheight = 100
 
 # debug fields
 ignorecollision = False
-allowaddenemy = False
+allowaddenemy = True
 
 # screen information
 # screenobejct = pygame.display.Info()
@@ -106,8 +107,8 @@ class Player(pygame.sprite.Sprite):
 class Enemy(pygame.sprite.Sprite):
     def __init__(self):
         super(Enemy, self).__init__()
-        self.surf = pygame.transform.scale(pygame.image.load('image/bitcoin1.png'), (20, 20)).convert()
-        self.surf.set_colorkey((255, 255, 255), RLEACCEL)
+        self.surf = pygame.transform.scale(pygame.image.load('image/angrybird.png'), (20, 20)).convert()
+        self.surf.set_colorkey((0, 0, 0), RLEACCEL)
         # The starting position is randomly generated, as is the speed
         self.rect = self.surf.get_rect(
             center=(
@@ -207,11 +208,11 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
 # Create custom events for adding a new enemy and cloud
 ADDENEMY = pygame.USEREVENT + 1
-pygame.time.set_timer(ADDENEMY, 250)
+pygame.time.set_timer(ADDENEMY, 2000)
 ADDCLOUD = pygame.USEREVENT + 2
 pygame.time.set_timer(ADDCLOUD, 1000)
 ADDBITCOIN = pygame.USEREVENT + 3
-pygame.time.set_timer(ADDBITCOIN, 1000)
+pygame.time.set_timer(ADDBITCOIN, 10000)
 
 #create needed items
 
@@ -252,8 +253,8 @@ collision_sound.set_volume(0.5)
 
 # Variable to keep our main loop running
 running = True
-counter1 =0 
-counter2= 0 
+counter1 =0
+counter2= 0
 # Our main loop
 sysfont = pygame.font.get_default_font()
 font = font = pygame.font.SysFont(None, 48)
