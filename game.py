@@ -95,10 +95,20 @@ class Player(pygame.sprite.Sprite):
             health_rect = pygame.Rect(0, 0, 23, 7)
         else:
             health_rect = pygame.Rect(0, 0, 0, 0)
-        health_rect.midbottom = self.rect.centerx, (self.rect.bottom)
+        health_rect.midbottom = self.rect.centerx, (self.rect.bottom+10)
         max_health = 100
         draw_health_bar(surf, health_rect.topleft, health_rect.size,
                         (0, 0, 0), (255, 0, 0), (0, 255, 0), self.health / max_health)
+    def draw_score(self,surf):
+        if (self.health != 0):
+            health_rect = pygame.Rect(0, 0, 23, 7)
+        else:
+            health_rect = pygame.Rect(0, 0, 0, 0)
+        health_rect.midbottom = self.rect.centerx, (self.rect.top-25)
+        max_health = 100
+        draw_score_text(surf, health_rect.topleft, health_rect.size,
+                        (0, 0, 0), (255, 0, 0), (0, 255, 0), self.score)
+
 
     # Move the sprite based on keypresses
     def update(self, pressed_keys, player2=False):
@@ -269,7 +279,13 @@ def draw_health_bar(surf, pos, size, borderC, backC, healthC, progress):
     innerSize = ((size[0] - 2) * progress, size[1] - 2)
     rect = (round(innerPos[0]), round(innerPos[1]), round(innerSize[0]), round(innerSize[1]))
     pygame.draw.rect(surf, healthC, rect)
-
+    largeFont = pygame.font.SysFont('comicsans', 10)  # Font object
+    text = largeFont.render(str(int(progress*100)), 1, (255, 255, 255))  # create our text
+    screen.blit(text, (round(innerPos[0]), round(innerPos[1])))
+def draw_score_text(surf, pos, size, borderC, backC, healthC, score):
+    largeFont = pygame.font.SysFont('comicsans', 30,bold=True)  # Font object
+    text = largeFont.render(str(int(score)), 1, (255, 84*256/100, 0))  # create our text
+    screen.blit(text, (round(pos[0]), round(pos[1])-15))
 
 # Setup for sounds, defaults are good
 pygame.mixer.init()
@@ -429,7 +445,9 @@ while running:
     # screen.blit(player2.surf, player2.rect)
     # screen.blit(ground.surf, ground.rect)
     player.draw_health(screen)
+    player.draw_score(screen)
     player2.draw_health(screen)
+    player2.draw_score(screen)
     ##player 1 collision with enemy##
     if pygame.sprite.spritecollide(player, enemies, dokill=player.alive) and not ignorecollision:
         # If so, remove the player
@@ -492,10 +510,16 @@ while running:
             if player.alive:
                 collision_sound.play()
                 player.score += int(bit.get_coin() / 10)
+                largeFont = pygame.font.SysFont('comicsans', 20)  # Font object
+                text = largeFont.render(str(int(bit.get_coin() / 10)), 1, (124, 252, 0))  # create our text
+                screen.blit(text, (bit.rect.center,  (bit.rect.topleft[0]-50,bit.rect.topleft[1]-50)))
         for bit in pygame.sprite.spritecollide(player2, benefits, dokill=player2.alive):
             if player2.alive:
                 collision_sound.play()
                 player2.score += int(bit.get_coin() / 10)
+                largeFont = pygame.font.SysFont('comicsans', 20)  # Font object
+                text = largeFont.render(str(int(bit.get_coin() / 10)), 1, (124, 252, 0))  # create our text
+                screen.blit(text, (bit.rect.center,  (bit.rect.topleft[0]-50,bit.rect.topleft[1]-50)))
     largeFont = pygame.font.SysFont('comicsans', 30)  # Font object
     text = largeFont.render('Player 1 Score: ' + str(player.score), 1, (255, 255, 255))  # create our text
     screen.blit(text, (0, 0))
