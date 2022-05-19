@@ -135,12 +135,15 @@ class BitCoin(pygame.sprite.Sprite):
         self.surf = pygame.transform.scale(pygame.image.load('image/bitcoin1.png'), (bitcoin_size, bitcoin_size)).convert()
         self.surf.set_colorkey((255, 255, 255), RLEACCEL)
         # The starting position is randomly generated
+        self.coin_size = bitcoin_size
         self.rect = self.surf.get_rect(
             center=(
                 random.randint(SCREEN_WIDTH + 20, SCREEN_WIDTH + 100),
                 random.randint(new_coin_size, SCREEN_HEIGHT - groundheight - bitcoin_size),
             )
         )
+    def get_coin(self):
+        return self.coin_size
 
     # Move the cloud based on a constant speed
     # Remove it when it passes the left edge of the screen
@@ -180,9 +183,10 @@ class Cloud(pygame.sprite.Sprite):
         self.rect = self.surf.get_rect(
             center=(
                 random.randint(SCREEN_WIDTH + 20, SCREEN_WIDTH + 100),
-                random.randint(groundheight, SCREEN_HEIGHT),
+                random.randint(30, SCREEN_HEIGHT - groundheight - 30),
             )
         )
+
 
     # Move the cloud based on a constant speed
     # Remove the cloud when it passes the left edge of the screen
@@ -238,13 +242,13 @@ all_sprites.add(player2)
 # Sound sources: Jon Fincher
 # move_up_sound = pygame.mixer.Sound("Rising_putter.ogg")
 # move_down_sound = pygame.mixer.Sound("Falling_putter.ogg")
-# collision_sound = pygame.mixer.Sound("Collision.ogg")
+collision_sound = pygame.mixer.Sound("music\Collision.ogg")
 
 
 # Set the base volume for all sounds
 # move_up_sound.set_volume(0.5)
 # move_down_sound.set_volume(0.5)
-# collision_sound.set_volume(0.5)
+collision_sound.set_volume(0.5)
 
 # Variable to keep our main loop running
 running = True
@@ -303,13 +307,28 @@ while running:
     screen.fill((135, 206, 250))
 
     # Draw all our sprites
-    for entity in all_sprites:
+    for entity in enemies:
+        screen.blit(entity.surf, entity.rect)
+    for entity in clouds:
+        screen.blit(entity.surf, entity.rect)
+    for entity in benefits:
         screen.blit(entity.surf, entity.rect)
     screen.blit(player.surf,player.rect)
+    screen.blit(player2.surf,player2.rect)
     # Check if any enemies have collided with the player
     if pygame.sprite.spritecollideany(player, enemies) and not ignorecollision:
         # If so, remove the player
         player.kill()
+
+        # Stop any moving sounds and play the collision sound
+        # move_up_sound.stop()
+        # move_down_sound.stop()
+
+        # Stop the loop
+        running = False
+    if pygame.sprite.spritecollideany(player2, enemies) and not ignorecollision:
+    # If so, remove the player
+        player2.kill()
 
         # Stop any moving sounds and play the collision sound
         # move_up_sound.stop()
@@ -320,14 +339,16 @@ while running:
         running = False
     if(benefits):
         for bit in pygame.sprite.spritecollide(player,benefits,dokill=True):
-            counter1+=1
+            collision_sound.play()
+            counter1+=int(bit.get_coin()/10)
         for bit in pygame.sprite.spritecollide(player2,benefits,dokill=True):
-            counter2+=1
+            collision_sound.play()
+            counter2+=int(bit.get_coin()/10)
     largeFont = pygame.font.SysFont('comicsans', 30) # Font object
-    text = largeFont.render('Score: ' + str(counter1), 1, (0,0,0)) # create our text
+    text = largeFont.render('Player 1 Score: ' + str(counter1), 1, (0,0,0)) # create our text
     screen.blit(text, (0, 0))
     largeFont = pygame.font.SysFont('comicsans', 30) # Font object
-    text = largeFont.render('Score: ' + str(counter2), 1, (0,0,0)) # create our text
+    text = largeFont.render('Player 2 Score: ' + str(counter2), 1, (0,0,0)) # create our text
     screen.blit(text, (0, 500))
     # Flip everything to the display
     pygame.display.flip()
