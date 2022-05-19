@@ -16,13 +16,24 @@ from pygame.locals import (
     K_ESCAPE,
     KEYDOWN,
     QUIT,
-)
+    K_w,
+    K_s,
+    K_a,
+    K_d,
 
+)
+TEXTCOLOR = (255,255,255)
+
+def drawText(text, font, surface, x, y):
+    textobj = font.render(text, 1, TEXTCOLOR)
+    textrect = textobj.get_rect()
+    textrect.topleft = (x, y)
+    surface.blit(textobj, textrect)
 # Initialize pygame
 pygame.init()
 
 #debug fields
-ignorecollision = True
+ignorecollision = False
 allowaddenemy = False
 
 #screen information
@@ -39,26 +50,42 @@ SCREEN_HEIGHT = info.current_h
 # Define the Player object extending pygame.sprite.Sprite
 # Instead of a surface, we use an image for a better looking sprite
 class Player(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self,player2=False):
         super(Player, self).__init__()
-        self.surf = pygame.image.load('image/car1.png').convert()
+        if not player2:
+            self.surf = pygame.image.load('image/car1.png').convert()
+        if player2:
+            self.surf = pygame.image.load('image/car21.png').convert()
         self.surf.set_colorkey((255, 255, 255), RLEACCEL)
         self.rect = self.surf.get_rect()
         self.topleft = (50, 50)
 
     # Move the sprite based on keypresses
-    def update(self, pressed_keys):
-        if pressed_keys[K_UP]:
-            self.rect.move_ip(0, -5)
-            #move_up_sound.play()
-        if pressed_keys[K_DOWN]:
-            self.rect.move_ip(0, 5)
-            #move_down_sound.play()
-        if pressed_keys[K_LEFT]:
-            self.rect.move_ip(-5, 0)
-        if pressed_keys[K_RIGHT]:
-            self.rect.move_ip(5, 0)
-
+    def update(self, pressed_keys,player2=False):
+        if not player2:
+            if pressed_keys[K_UP]:
+                self.rect.move_ip(0, -5)
+                #move_up_sound.play()
+            else:
+            # if pressed_keys[K_DOWN]:
+                self.rect.move_ip(0, 5)
+                #move_down_sound.play()
+            if pressed_keys[K_LEFT]:
+                self.rect.move_ip(-5, 0)
+            if pressed_keys[K_RIGHT]:
+                self.rect.move_ip(5, 0)
+        if player2:
+            if pressed_keys[K_w]:
+                self.rect.move_ip(0, -5)
+                #move_up_sound.play()
+            else:
+            # if pressed_keys[K_s]:
+                self.rect.move_ip(0, 5)
+                #move_down_sound.play()
+            if pressed_keys[K_a]:
+                self.rect.move_ip(-5, 0)
+            if pressed_keys[K_d]:
+                self.rect.move_ip(5, 0)
         # Keep player on the screen
         if self.rect.left < 0:
             self.rect.left = 0
@@ -114,7 +141,7 @@ class BitCoin(pygame.sprite.Sprite):
     # Remove it when it passes the left edge of the screen
     def update(self):
         self.rect.move_ip(-5, 0)
-        if self.rect.bottom > SCREEN_HEIGHT:
+        if self.rect.right <0:
             self.kill()
 
 
@@ -136,7 +163,7 @@ pygame.time.set_timer(ADDBITCOIN, 1000)
 
 # Create our 'player'
 player = Player()
-
+player2 = Player(player2=True)
 # Create groups to hold enemy sprites, cloud sprites, and all sprites
 # - enemies is used for collision detection and position updates
 # - clouds is used for position updates
@@ -145,7 +172,7 @@ enemies = pygame.sprite.Group()
 benefits = pygame.sprite.Group()
 all_sprites = pygame.sprite.Group()
 all_sprites.add(player)
-
+all_sprites.add(player2)
 # Load and play our background music
 # Sound source: http://ccmixter.org/files/Apoxode/59262
 # License: https://creativecommons.org/licenses/by/3.0/
@@ -166,8 +193,14 @@ all_sprites.add(player)
 
 # Variable to keep our main loop running
 running = True
-
+counter1 =0 
+counter2= 0 
 # Our main loop
+sysfont = pygame.font.get_default_font()
+font = font = pygame.font.SysFont(None, 48)
+drawText('Score: ', font, screen, (10), (10))
+pygame.display.update()
+
 while running:
     # Look at every event in the queue
     for event in pygame.event.get():
@@ -198,7 +231,7 @@ while running:
     # Get the set of keys pressed and check for user input
     pressed_keys = pygame.key.get_pressed()
     player.update(pressed_keys)
-
+    player2.update(pressed_keys,player2=True)
     # Update the position of our enemies and clouds
     enemies.update()
     benefits.update()
@@ -222,7 +255,17 @@ while running:
 
         # Stop the loop
         running = False
-
+    if(benefits):
+        for bit in pygame.sprite.spritecollide(player,benefits,dokill=True):
+            counter1+=1
+        for bit in pygame.sprite.spritecollide(player2,benefits,dokill=True):
+            counter2+=1
+    largeFont = pygame.font.SysFont('comicsans', 30) # Font object
+    text = largeFont.render('Score: ' + str(counter1), 1, (0,0,0)) # create our text
+    screen.blit(text, (0, 0))
+    largeFont = pygame.font.SysFont('comicsans', 30) # Font object
+    text = largeFont.render('Score: ' + str(counter2), 1, (0,0,0)) # create our text
+    screen.blit(text, (0, 500))
     # Flip everything to the display
     pygame.display.flip()
 
