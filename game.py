@@ -3,7 +3,7 @@ import pygame
 
 # Import random for random numbers
 import random
-
+import keyboard
 # Import pygame.locals for easier access to key coordinates
 # Updated to conform to flake8 and black standards
 # from pygame.locals import *
@@ -31,7 +31,8 @@ COLLIDE_ENEMY_POINTS = 10  # losing points when colliding with an enemy
 COLLISION_DELTA = 10  # amount of frames to allow player to not lose points since last collision with ground
 GROUND_PENALTY = 10
 NUM_OF_PLAYER_IMGS = 10
-
+CLOUDS = True
+LOADING_SCREEN = True
 
 def drawText(text, font, surface, x, y):
     textobj = font.render(text, 1, TEXTCOLOR)
@@ -86,7 +87,7 @@ class Player(pygame.sprite.Sprite):
         self.surf.set_colorkey((255, 255, 255), RLEACCEL)
         self.rect = self.surf.get_rect()
 
-        print(self.rect.size)
+        # print(self.rect.size)
         self.rect.y = SCREEN_HEIGHT / 2  # for now start from middle
         self.health = 100
 
@@ -97,8 +98,9 @@ class Player(pygame.sprite.Sprite):
             health_rect = pygame.Rect(0, 0, 0, 0)
         health_rect.midbottom = self.rect.centerx, (self.rect.bottom+10)
         max_health = 100
-        draw_health_bar(surf, health_rect.topleft, health_rect.size,
-                        (0, 0, 0), (255, 0, 0), (0, 255, 0), self.health / max_health)
+        if(self.alive):
+            draw_health_bar(surf, health_rect.topleft, health_rect.size,
+                            (0, 0, 0), (255, 0, 0), (0, 255, 0), self.health / max_health)
     def draw_score(self,surf):
         if (self.health != 0):
             health_rect = pygame.Rect(0, 0, 23, 7)
@@ -106,8 +108,9 @@ class Player(pygame.sprite.Sprite):
             health_rect = pygame.Rect(0, 0, 0, 0)
         health_rect.midbottom = self.rect.centerx, (self.rect.top-25)
         max_health = 100
-        draw_score_text(surf, health_rect.topleft, health_rect.size,
-                        (0, 0, 0), (255, 0, 0), (0, 255, 0), self.score)
+        if(self.alive):
+            draw_score_text(surf, health_rect.topleft, health_rect.size,
+                            (0, 0, 0), (255, 0, 0), (0, 255, 0), self.score)
 
 
     # Move the sprite based on keypresses
@@ -126,7 +129,7 @@ class Player(pygame.sprite.Sprite):
                 self.fire_is_on = False
                 # self.state = max(9, self.state + 1)
                 self.state = min(self.state + 1, NUM_OF_PLAYER_IMGS - 1)
-                print('state is ' + str(self.state))
+                # print('state is ' + str(self.state))
                 # move_down_sound.play()
             if pressed_keys[K_LEFT]:
                 self.rect.move_ip(-5, 0)
@@ -207,8 +210,8 @@ class BitCoin(pygame.sprite.Sprite):
     def __init__(self, bitcoin_size=40):
         super(BitCoin, self).__init__()
         self.surf = pygame.transform.scale(pygame.image.load('image/bitcoin1.png'),
-                                           (bitcoin_size, bitcoin_size)).convert()
-        self.surf.set_colorkey((255, 255, 255), RLEACCEL)
+                                           (bitcoin_size, bitcoin_size)).convert_alpha()
+        # self.surf.set_colorkey((255, 255, 255), RLEACCEL)
         # The starting position is randomly generated
         self.coin_size = bitcoin_size
         self.rect = self.surf.get_rect(
@@ -304,16 +307,16 @@ player2_off_arr = []
 player2_on_arr = []
 for i in range(NUM_OF_PLAYER_IMGS):
     curr_player1_off_img = pygame.transform.scale(pygame.image.load('image/player1_off' + str(i) + '.png'),
-                                                  (50, 100)).convert()
+                                                  (50, 100)).convert_alpha()
     player1_off_arr.append(curr_player1_off_img)
     curr_player1_on_img = pygame.transform.scale(pygame.image.load('image/player1_on' + str(i) + '.png'),
-                                                 (50, 100)).convert()
+                                                 (50, 100)).convert_alpha()
     player1_on_arr.append(curr_player1_on_img)
     curr_player2_off_img = pygame.transform.scale(pygame.image.load('image/player2_off' + str(i) + '.png'),
-                                                  (50, 100)).convert()
+                                                  (50, 100)).convert_alpha()
     player2_off_arr.append(curr_player2_off_img)
     curr_player2_on_img = pygame.transform.scale(pygame.image.load('image/player2_on' + str(i) + '.png'),
-                                                 (50, 100)).convert()
+                                                 (50, 100)).convert_alpha()
     player2_on_arr.append(curr_player2_on_img)
 
     # print(player1_off_arr)
@@ -321,8 +324,9 @@ for i in range(NUM_OF_PLAYER_IMGS):
 # Create custom events for adding a new enemy and cloud
 ADDENEMY = pygame.USEREVENT + 1
 pygame.time.set_timer(ADDENEMY, 2000)
-ADDCLOUD = pygame.USEREVENT + 2
-pygame.time.set_timer(ADDCLOUD, 1000)
+if CLOUDS:
+    ADDCLOUD = pygame.USEREVENT + 2
+    pygame.time.set_timer(ADDCLOUD, 1000)
 ADDBITCOIN = pygame.USEREVENT + 3
 pygame.time.set_timer(ADDBITCOIN, 1000)
 
@@ -344,7 +348,8 @@ ground_group = pygame.sprite.Group()
 ground_group.add(ground)
 enemies = pygame.sprite.Group()
 benefits = pygame.sprite.Group()
-clouds = pygame.sprite.Group()
+if CLOUDS:
+    clouds = pygame.sprite.Group()
 
 # enemies.add(ground)
 all_sprites = pygame.sprite.Group()
@@ -361,6 +366,7 @@ all_sprites.add(player2)
 # Sound sources: Jon Fincher
 # move_up_sound = pygame.mixer.Sound("Rising_putter.ogg")
 # move_down_sound = pygame.mixer.Sound("Falling_putter.ogg")
+blast_off_sound = pygame.mixer.Sound("music\\1.wav")
 collision_sound = pygame.mixer.Sound("music\Collision.ogg")
 boom_sound = pygame.mixer.Sound("music//boom.ogg")
 # Set the base volume for all sounds
@@ -368,16 +374,29 @@ boom_sound = pygame.mixer.Sound("music//boom.ogg")
 # move_down_sound.set_volume(0.5)
 collision_sound.set_volume(0.5)
 boom_sound.set_volume(0.5)
+blast_off_sound.set_volume(1)
 # Variable to keep our main loop running
 running = True
 
 # Our main loop
 sysfont = pygame.font.get_default_font()
 font = font = pygame.font.SysFont(None, 48)
-drawText('Score: ', font, screen, (10), (10))
-pygame.display.update()
 progress = 1
 maxwidth = 20
+key_rel =0
+last = None
+countdown = 6
+if (LOADING_SCREEN):
+    channel = blast_off_sound.play()
+    while channel.get_busy():
+        if(countdown>=0):
+            drawText(str(countdown), font, screen, (SCREEN_WIDTH/2), (SCREEN_HEIGHT/4)+50*(6-countdown))
+            pygame.display.update()
+            countdown-=1
+        else:
+            pygame.display.update()   
+        pygame.time.wait(1000)
+# drawText(str("IGNITION!"), font, screen, (SCREEN_WIDTH/2)-100, (SCREEN_HEIGHT/4)+50*(6-countdown))
 while running:
     # Look at every event in the queue
     # DrawBar(screen,(500,500),(200,20),(0,0,0),(0,128,0),0.5)
@@ -398,20 +417,21 @@ while running:
             new_enemy = Enemy()
             enemies.add(new_enemy)
             all_sprites.add(new_enemy)
-
-        elif event.type == ADDCLOUD:
-            # Create the new cloud and add it to sprite groups
-            new_cloud = Cloud()
-            clouds.add(new_cloud)
-            all_sprites.add(new_cloud)
-
-        # Should we add a new cloud?
+        
         elif event.type == ADDBITCOIN:
             # Create the new cloud, and add it to our sprite groups
             new_coin_size = random.randint(10, 50)
             new_bitcoin = BitCoin(new_coin_size)
             benefits.add(new_bitcoin)
             all_sprites.add(new_bitcoin)
+        elif CLOUDS:
+            if(event.type == ADDCLOUD):
+            # Create the new cloud and add it to sprite groups
+                new_cloud = Cloud()
+                clouds.add(new_cloud)
+                all_sprites.add(new_cloud)
+
+        # Should we add a new cloud?
 
     # Get the set of keys pressed and check for user input
     pressed_keys = pygame.key.get_pressed()
@@ -422,16 +442,26 @@ while running:
     # Update the position of our enemies and clouds
     enemies.update()
     benefits.update()
-    clouds.update()
+    if CLOUDS:
+        clouds.update()
 
+    keys = ["a","w","d","a","a","d","d"]
+    if key_rel ==2 :
+        if last:
+            keyboard.release(last)
+        key_rel = 0
+    last = random.choice(keys)
+    keyboard.press(last)
+    key_rel+=1
     # Fill the screen with sky blue
     screen.blit(bg, (0, 0))
 
     # Draw all our sprites
     for entity in enemies:
         screen.blit(entity.surf, entity.rect)
-    for entity in clouds:
-        screen.blit(entity.surf, entity.rect)
+    if CLOUDS:
+        for entity in clouds:
+            screen.blit(entity.surf, entity.rect)
     for entity in benefits:
         screen.blit(entity.surf, entity.rect)
 
@@ -454,6 +484,7 @@ while running:
         # player.score -= COLLIDE_ENEMY_POINTS
         player.health -= 10
         if player.health <= 0 and player.alive:
+            player.health =0
             boom_sound.play()
             player.kill()
             player.alive = False
@@ -472,6 +503,7 @@ while running:
             player.ground_counter = 0
             player.health -= 10
             if player.health <= 0 and player.alive:
+                player.health =0
                 boom_sound.play()
                 player.kill()
                 player.alive = False
@@ -482,6 +514,7 @@ while running:
         # player2.score -= COLLIDE_ENEMY_POINTS
         player2.health -= 10
         if player2.health <= 0 and player2.alive:
+            player2.health =0
             boom_sound.play()
             player2.kill()
             player2.alive = False
@@ -499,8 +532,9 @@ while running:
             # player2.score -= GROUND_PENALTY
             player2.health -= 10
             player2.ground_counter = 0
-            print(player2.health)
+            # print(player2.health)
             if player2.health <= 0 and player2.alive:
+                player2.health =0
                 boom_sound.play()
                 player2.kill()
                 player2.alive = False
@@ -520,12 +554,12 @@ while running:
                 largeFont = pygame.font.SysFont('comicsans', 20)  # Font object
                 text = largeFont.render(str(int(bit.get_coin() / 10)), 1, (124, 252, 0))  # create our text
                 screen.blit(text, (bit.rect.center,  (bit.rect.topleft[0]-50,bit.rect.topleft[1]-50)))
-    largeFont = pygame.font.SysFont('comicsans', 30)  # Font object
-    text = largeFont.render('Player 1 Score: ' + str(player.score), 1, (255, 255, 255))  # create our text
-    screen.blit(text, (0, 0))
-    largeFont = pygame.font.SysFont('comicsans', 30)  # Font object
-    text = largeFont.render('Player 2 Score: ' + str(player2.score), 1, (255, 255, 255))  # create our text
-    screen.blit(text, (0, 500))
+    # largeFont = pygame.font.SysFont('comicsans', 30)  # Font object
+    # text = largeFont.render('Player 1 Score: ' + str(player.score), 1, (255, 255, 255))  # create our text
+    # screen.blit(text, (0, 0))
+    # largeFont = pygame.font.SysFont('comicsans', 30)  # Font object
+    # text = largeFont.render('Player 2 Score: ' + str(player2.score), 1, (255, 255, 255))  # create our text
+    # screen.blit(text, (0, 500))
     # Flip everything to the display
     pygame.display.flip()
 
