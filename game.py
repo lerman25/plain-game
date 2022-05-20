@@ -40,7 +40,7 @@ COLLISION_DELTA = 10  # amount of frames to allow player to not lose points sinc
 GROUND_PENALTY = 10
 NUM_OF_PLAYER_IMGS = 10
 CLOUDS = True
-LOADING_SCREEN = False
+LOADING_SCREEN = True
 BACKGROUND_DELAY = 5
 
 def drawText(text, font, surface, x, y):
@@ -243,12 +243,12 @@ class Player(pygame.sprite.Sprite):
 class Enemy(pygame.sprite.Sprite):
     def __init__(self):
         super(Enemy, self).__init__()
-        self.surf = pygame.transform.scale(pygame.image.load('image/angrybird.png'), (20, 20)).convert()
+        self.surf = pygame.transform.scale(pygame.image.load('image/astroid.png'), (60, 30)).convert_alpha()
         self.surf.set_colorkey((0, 0, 0), RLEACCEL)
         # The starting position is randomly generated, as is the speed
         self.rect = self.surf.get_rect(
             center=(
-                random.randint(SCREEN_WIDTH + 20, SCREEN_WIDTH + 100),
+                random.randint(SCREEN_WIDTH + 30, SCREEN_WIDTH + 100),
                 random.randint(0, SCREEN_HEIGHT),
             )
         )
@@ -479,36 +479,6 @@ if (LOADING_SCREEN):
     screen.blit(opening_bg3, (0, 0))
     pygame.display.flip()
     pygame.time.wait(1000)
-
-    while True:
-        event = pygame.event.wait()
-
-        keys_pressed = pygame.key.get_pressed()
-        if keys_pressed[K_RIGHT]:
-            pygame.event.post(pygame.event.Event(KEYRIGHT_EVENT))
-        if keys_pressed[K_LEFT]:
-            pygame.event.post(pygame.event.Event(KEYLEFT_EVENT))
-        if completed_right and completed_left and completed_up:
-            break
-        if event.type == KEYUP and check_up_in_progress:
-            completed_up = True
-            check_up_in_progress = False
-            check_right_in_progress = True
-            pygame.event.clear()
-            print("check up passed")
-        if event.type == KEYRIGHT_EVENT and check_right_in_progress:
-            completed_right = True
-            check_right_in_progress = False
-            check_left_in_progress = True
-            print("check right passed")
-            pygame.event.clear()
-        if event.type == KEYLEFT_EVENT and check_left_in_progress:
-            completed_left = True
-            check_left_in_progress = False
-            print("check left passed")
-            pygame.event.clear()
-
-
 
     channel = blast_off_sound.play()
     while channel.get_busy():
