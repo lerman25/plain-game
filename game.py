@@ -4,6 +4,10 @@ import pygame
 # Import random for random numbers
 import random
 import keyboard
+import socket
+import threading
+import Player2Control
+
 # Import pygame.locals for easier access to key coordinates
 # Updated to conform to flake8 and black standards
 # from pygame.locals import *
@@ -33,9 +37,8 @@ COLLISION_DELTA = 10  # amount of frames to allow player to not lose points sinc
 GROUND_PENALTY = 10
 NUM_OF_PLAYER_IMGS = 10
 CLOUDS = True
-LOADING_SCREEN = True
+LOADING_SCREEN = False
 BACKGROUND_DELAY = 5
-
 
 def drawText(text, font, surface, x, y):
     textobj = font.render(text, 1, TEXTCOLOR)
@@ -65,7 +68,33 @@ info = pygame.display.Info()
 SCREEN_WIDTH = info.current_w
 SCREEN_HEIGHT = info.current_h
 
+#define server socket
+localIP = "127.0.0.1"
+localPort = 20001
+bufferSize = 1024
+# Create a datagram socket
+UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+# Bind to address and ip
+UDPServerSocket.bind((localIP, localPort))
 
+#listening thread
+
+def StartServer():
+    while running:
+        bytesAddressPair = UDPServerSocket.recvfrom(bufferSize)
+        message = bytesAddressPair[0]
+
+        address = bytesAddressPair[1]
+
+        clientMsg = "Message from Client:{}".format(message)
+        clientIP = "Client IP Address:{}".format(address)
+
+        print(clientMsg)
+        print(clientIP)
+    print("closing socket")
+    UDPServerSocket.close()
+
+# listening_thread = threading.Thread(target=StartServer)
 # Define the Player object extending pygame.sprite.Sprite
 # Instead of a surface, we use an image for a better looking sprite
 class Player(pygame.sprite.Sprite):
@@ -299,7 +328,7 @@ pygame.mixer.init()
 
 # Setup the clock for a decent framerate
 clock = pygame.time.Clock()
-
+Player2Control.SendCommand("Go right!")
 # Create the screen object
 # The size is determined by the constant SCREEN_WIDTH and SCREEN_HEIGHT
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -390,6 +419,10 @@ blast_off_sound.set_volume(1)
 # Variable to keep our main loop running
 running = True
 
+# listening_thread.start()
+
+
+
 # Our main loop
 sysfont = pygame.font.get_default_font()
 font = font = pygame.font.SysFont(None, 48)
@@ -399,7 +432,6 @@ key_rel = 0
 last = None
 countdown = 6
 if (LOADING_SCREEN):
-
     completed_right         = False
     completed_left          = False
     completed_up            = False
@@ -417,7 +449,6 @@ if (LOADING_SCREEN):
     screen.blit(opening_bg3, (0, 0))
     pygame.display.flip()
     pygame.time.wait(1000)
-
 
     while True:
         event = pygame.event.wait()
@@ -459,6 +490,7 @@ if (LOADING_SCREEN):
             pygame.display.update()
         pygame.time.wait(1000)
 # drawText(str("IGNITION!"), font, screen, (SCREEN_WIDTH/2)-100, (SCREEN_HEIGHT/4)+50*(6-countdown))
+
 while running:
     for event in pygame.event.get():
         # Did the user hit a key?
