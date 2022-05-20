@@ -6,7 +6,9 @@ import random
 import keyboard
 import socket
 import threading
-import Player2Control
+import errno
+#import Player2Control
+from socket import error as socket_error
 
 
 # Import pygame.locals for easier access to key coordinates
@@ -70,30 +72,51 @@ SCREEN_WIDTH = info.current_w
 SCREEN_HEIGHT = info.current_h
 
 #define server socket
-localIP = "127.0.0.1"
+localIP = "192.168.94.1"
 localPort = 20001
 bufferSize = 1024
 # Create a datagram socket
 UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+print(socket.gethostname())
+# UDPServerSocket.listen(True)
 # Bind to address and ip
-UDPServerSocket.bind((localIP, localPort))
+UDPServerSocket.bind(('0.0.0.0', localPort))
+UDPServerSocket.settimeout(0.1)
 
 #listening thread
 
 def StartServer():
     while not running:
         time.sleep(0.1)
+    last = -1
+    release_counter=0
     while running:
-        bytesAddressPair = UDPServerSocket.recvfrom(bufferSize)
-        message = bytesAddressPair[0]
+        # if last and release_counter==3:
+        #     print("release " + last)
+        try:
+            bytesAddressPair = UDPServerSocket.recvfrom(bufferSize)
+            message = bytesAddressPair[0]
+            address = bytesAddressPair[1]
 
-        address = bytesAddressPair[1]
+            clientMsg = "Message from Client:{}".format(message)
+            clientIP = "Client IP Address:{}".format(address)
 
-        clientMsg = "Message from Client:{}".format(message)
-        clientIP = "Client IP Address:{}".format(address)
+            # prase the commands from player 2
+            # print(clientMsg)
+            print("press" + chr(message[-1]))
+            if (chr(message[-1]) in ['a', 'w', 'd']):
+                if not keyboard.is_pressed(chr(message[-1])):
+                    last = chr(message[-1])
+                    keyboard.press(chr(message[-1]))
+            # print(clientIP)
+        except socket_error as serr:
+           for key in ['a', 'w', 'd']:
+               # if keyboard.is_pressed(key):
+                    keyboard.release(key)
+                    print("releasew")
+                    release_counter += 1
 
-        print(clientMsg)
-        print(clientIP)
+
 
 
 def CloseSocket():
@@ -335,7 +358,7 @@ pygame.mixer.init()
 
 # Setup the clock for a decent framerate
 clock = pygame.time.Clock()
-Player2Control.SendCommand("Go right!")
+#Player2Control.SendCommand("Go right!")
 # Create the screen object
 # The size is determined by the constant SCREEN_WIDTH and SCREEN_HEIGHT
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -544,15 +567,15 @@ while running:
     if CLOUDS:
         clouds.update()
 
-    keys = ["a", "w", "d", "a", "a", "d", "d"]
-    if key_rel == 2:
-        if last:
-            keyboard.release(last)
-        key_rel = 0
-    last = random.choice(keys)
-    keyboard.press(last)
-    key_rel += 1
-
+    # keys = ["a", "w", "d", "a", "a", "d", "d"]
+    # if key_rel == 2:
+    #     if last:
+    #         keyboard.release(last)
+    #     key_rel = 0
+    # last = random.choice(keys)
+    # keyboard.press(last)
+    # key_rel += 1
+    #
     screen.blit(bg, (0, 0))
 
     # Draw all our sprites
