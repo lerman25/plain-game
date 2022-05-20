@@ -15,6 +15,7 @@ from pygame.locals import (
     K_RIGHT,
     K_ESCAPE,
     KEYDOWN,
+    KEYUP,
     QUIT,
     K_w,
     K_s,
@@ -33,6 +34,8 @@ GROUND_PENALTY = 10
 NUM_OF_PLAYER_IMGS = 10
 CLOUDS = True
 LOADING_SCREEN = True
+BACKGROUND_DELAY = 5
+
 
 def drawText(text, font, surface, x, y):
     textobj = font.render(text, 1, TEXTCOLOR)
@@ -47,7 +50,7 @@ pygame.init()
 # debug fields
 # global variables:
 groundheight = 100
-
+background_time = 0  # current background state running timer.
 # debug fields
 ignorecollision = False
 allowaddenemy = True
@@ -62,6 +65,10 @@ info = pygame.display.Info()
 SCREEN_WIDTH = info.current_w
 SCREEN_HEIGHT = info.current_h
 bg = pygame.image.load("image\space.jpg")
+opening_bg1 = pygame.image.load("image\Background_1.png")
+opening_bg2 = pygame.image.load("image\Background_2.png")
+opening_bg3 = pygame.image.load("image\Background_3.png")
+
 
 
 # Define the Player object extending pygame.sprite.Sprite
@@ -96,22 +103,22 @@ class Player(pygame.sprite.Sprite):
             health_rect = pygame.Rect(0, 0, 23, 7)
         else:
             health_rect = pygame.Rect(0, 0, 0, 0)
-        health_rect.midbottom = self.rect.centerx, (self.rect.bottom+10)
+        health_rect.midbottom = self.rect.centerx, (self.rect.bottom + 10)
         max_health = 100
-        if(self.alive):
+        if (self.alive):
             draw_health_bar(surf, health_rect.topleft, health_rect.size,
                             (0, 0, 0), (255, 0, 0), (0, 255, 0), self.health / max_health)
-    def draw_score(self,surf):
+
+    def draw_score(self, surf):
         if (self.health != 0):
             health_rect = pygame.Rect(0, 0, 23, 7)
         else:
             health_rect = pygame.Rect(0, 0, 0, 0)
-        health_rect.midbottom = self.rect.centerx, (self.rect.top-25)
+        health_rect.midbottom = self.rect.centerx, (self.rect.top - 25)
         max_health = 100
-        if(self.alive):
+        if (self.alive):
             draw_score_text(surf, health_rect.topleft, health_rect.size,
                             (0, 0, 0), (255, 0, 0), (0, 255, 0), self.score)
-
 
     # Move the sprite based on keypresses
     def update(self, pressed_keys, player2=False):
@@ -165,7 +172,6 @@ class Player(pygame.sprite.Sprite):
             else:
                 self.surf = player2_off_arr[self.state]
             self.surf.set_colorkey((255, 255, 255), RLEACCEL)
-
 
         # Keep player on the screen
         if self.rect.left < 0:
@@ -283,12 +289,15 @@ def draw_health_bar(surf, pos, size, borderC, backC, healthC, progress):
     rect = (round(innerPos[0]), round(innerPos[1]), round(innerSize[0]), round(innerSize[1]))
     pygame.draw.rect(surf, healthC, rect)
     largeFont = pygame.font.SysFont('comicsans', 10)  # Font object
-    text = largeFont.render(str(int(progress*100)), 1, (255, 255, 255))  # create our text
+    text = largeFont.render(str(int(progress * 100)), 1, (255, 255, 255))  # create our text
     screen.blit(text, (round(innerPos[0]), round(innerPos[1])))
+
+
 def draw_score_text(surf, pos, size, borderC, backC, healthC, score):
-    largeFont = pygame.font.SysFont('comicsans', 30,bold=True)  # Font object
-    text = largeFont.render(str(int(score)), 1, (255, 84*256/100, 0))  # create our text
-    screen.blit(text, (round(pos[0]), round(pos[1])-15))
+    largeFont = pygame.font.SysFont('comicsans', 30, bold=True)  # Font object
+    text = largeFont.render(str(int(score)), 1, (255, 84 * 256 / 100, 0))  # create our text
+    screen.blit(text, (round(pos[0]), round(pos[1]) - 15))
+
 
 # Setup for sounds, defaults are good
 pygame.mixer.init()
@@ -328,6 +337,8 @@ if CLOUDS:
     ADDCLOUD = pygame.USEREVENT + 2
     pygame.time.set_timer(ADDCLOUD, 1000)
 ADDBITCOIN = pygame.USEREVENT + 3
+KEYLEFT_EVENT = pygame.USEREVENT + 4
+KEYRIGHT_EVENT = pygame.USEREVENT + 5
 pygame.time.set_timer(ADDBITCOIN, 1000)
 
 # create needed items
@@ -383,23 +394,60 @@ sysfont = pygame.font.get_default_font()
 font = font = pygame.font.SysFont(None, 48)
 progress = 1
 maxwidth = 20
-key_rel =0
+key_rel = 0
 last = None
 countdown = 6
 if (LOADING_SCREEN):
+
+    completed_right         = False
+    completed_left          = False
+    completed_up            = False
+    check_up_in_progress    = True
+    check_right_in_progress = False
+    check_left_in_progress  = False
+    pygame.event.clear()
+
+    while True:
+        event = pygame.event.wait()
+
+        keys_pressed = pygame.key.get_pressed()
+        if keys_pressed[K_RIGHT]:
+            pygame.event.post(pygame.event.Event(KEYRIGHT_EVENT))
+        if keys_pressed[K_LEFT]:
+            pygame.event.post(pygame.event.Event(KEYLEFT_EVENT))
+        if completed_right and completed_left and completed_up:
+            break
+        if event.type == KEYUP and check_up_in_progress:
+            completed_up = True
+            check_up_in_progress = False
+            check_right_in_progress = True
+            pygame.event.clear()
+            print("check up passed")
+        if event.type == KEYRIGHT_EVENT and check_right_in_progress:
+            completed_right = True
+            check_right_in_progress = False
+            check_left_in_progress = True
+            print("check right passed")
+            pygame.event.clear()
+        if event.type == KEYLEFT_EVENT and check_left_in_progress:
+            completed_left = True
+            check_left_in_progress = False
+            print("check left passed")
+            pygame.event.clear()
+
+
+
     channel = blast_off_sound.play()
     while channel.get_busy():
-        if(countdown>=0):
-            drawText(str(countdown), font, screen, (SCREEN_WIDTH/2), (SCREEN_HEIGHT/4)+50*(6-countdown))
+        if (countdown >= 0):
+            drawText(str(countdown), font, screen, (SCREEN_WIDTH / 2), (SCREEN_HEIGHT / 4) + 50 * (6 - countdown))
             pygame.display.update()
-            countdown-=1
+            countdown -= 1
         else:
-            pygame.display.update()   
+            pygame.display.update()
         pygame.time.wait(1000)
 # drawText(str("IGNITION!"), font, screen, (SCREEN_WIDTH/2)-100, (SCREEN_HEIGHT/4)+50*(6-countdown))
 while running:
-    # Look at every event in the queue
-    # DrawBar(screen,(500,500),(200,20),(0,0,0),(0,128,0),0.5)
     for event in pygame.event.get():
         # Did the user hit a key?
         if event.type == KEYDOWN:
@@ -417,7 +465,7 @@ while running:
             new_enemy = Enemy()
             enemies.add(new_enemy)
             all_sprites.add(new_enemy)
-        
+
         elif event.type == ADDBITCOIN:
             # Create the new cloud, and add it to our sprite groups
             new_coin_size = random.randint(10, 50)
@@ -425,8 +473,8 @@ while running:
             benefits.add(new_bitcoin)
             all_sprites.add(new_bitcoin)
         elif CLOUDS:
-            if(event.type == ADDCLOUD):
-            # Create the new cloud and add it to sprite groups
+            if (event.type == ADDCLOUD):
+                # Create the new cloud and add it to sprite groups
                 new_cloud = Cloud()
                 clouds.add(new_cloud)
                 all_sprites.add(new_cloud)
@@ -445,15 +493,15 @@ while running:
     if CLOUDS:
         clouds.update()
 
-    keys = ["a","w","d","a","a","d","d"]
-    if key_rel ==2 :
+    keys = ["a", "w", "d", "a", "a", "d", "d"]
+    if key_rel == 2:
         if last:
             keyboard.release(last)
         key_rel = 0
     last = random.choice(keys)
     keyboard.press(last)
-    key_rel+=1
-    # Fill the screen with sky blue
+    key_rel += 1
+
     screen.blit(bg, (0, 0))
 
     # Draw all our sprites
@@ -484,7 +532,7 @@ while running:
         # player.score -= COLLIDE_ENEMY_POINTS
         player.health -= 10
         if player.health <= 0 and player.alive:
-            player.health =0
+            player.health = 0
             boom_sound.play()
             player.kill()
             player.alive = False
@@ -503,7 +551,7 @@ while running:
             player.ground_counter = 0
             player.health -= 10
             if player.health <= 0 and player.alive:
-                player.health =0
+                player.health = 0
                 boom_sound.play()
                 player.kill()
                 player.alive = False
@@ -514,7 +562,7 @@ while running:
         # player2.score -= COLLIDE_ENEMY_POINTS
         player2.health -= 10
         if player2.health <= 0 and player2.alive:
-            player2.health =0
+            player2.health = 0
             boom_sound.play()
             player2.kill()
             player2.alive = False
@@ -534,7 +582,7 @@ while running:
             player2.ground_counter = 0
             # print(player2.health)
             if player2.health <= 0 and player2.alive:
-                player2.health =0
+                player2.health = 0
                 boom_sound.play()
                 player2.kill()
                 player2.alive = False
@@ -546,14 +594,14 @@ while running:
                 player.score += int(bit.get_coin() / 10)
                 largeFont = pygame.font.SysFont('comicsans', 20)  # Font object
                 text = largeFont.render(str(int(bit.get_coin() / 10)), 1, (124, 252, 0))  # create our text
-                screen.blit(text, (bit.rect.center,  (bit.rect.topleft[0]-50,bit.rect.topleft[1]-50)))
+                screen.blit(text, (bit.rect.center, (bit.rect.topleft[0] - 50, bit.rect.topleft[1] - 50)))
         for bit in pygame.sprite.spritecollide(player2, benefits, dokill=player2.alive):
             if player2.alive:
                 collision_sound.play()
                 player2.score += int(bit.get_coin() / 10)
                 largeFont = pygame.font.SysFont('comicsans', 20)  # Font object
                 text = largeFont.render(str(int(bit.get_coin() / 10)), 1, (124, 252, 0))  # create our text
-                screen.blit(text, (bit.rect.center,  (bit.rect.topleft[0]-50,bit.rect.topleft[1]-50)))
+                screen.blit(text, (bit.rect.center, (bit.rect.topleft[0] - 50, bit.rect.topleft[1] - 50)))
     # largeFont = pygame.font.SysFont('comicsans', 30)  # Font object
     # text = largeFont.render('Player 1 Score: ' + str(player.score), 1, (255, 255, 255))  # create our text
     # screen.blit(text, (0, 0))
