@@ -64,11 +64,6 @@ info = pygame.display.Info()
 # print(info)
 SCREEN_WIDTH = info.current_w
 SCREEN_HEIGHT = info.current_h
-bg = pygame.image.load("image\space.jpg")
-opening_bg1 = pygame.image.load("image\Background_1.png")
-opening_bg2 = pygame.image.load("image\Background_2.png")
-opening_bg3 = pygame.image.load("image\Background_3.png")
-
 
 
 # Define the Player object extending pygame.sprite.Sprite
@@ -309,6 +304,12 @@ clock = pygame.time.Clock()
 # The size is determined by the constant SCREEN_WIDTH and SCREEN_HEIGHT
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
+pygame.transform.scale(pygame.image.load('image/angrybird.png'), (20, 20)).convert_alpha()
+bg = pygame.image.load("image\space.jpg")
+opening_bg1 = pygame.transform.scale(pygame.image.load("image\Background_1.png"), (SCREEN_WIDTH,SCREEN_HEIGHT)).convert_alpha()
+opening_bg2 = pygame.transform.scale(pygame.image.load("image\Background_2.png"), (SCREEN_WIDTH,SCREEN_HEIGHT)).convert_alpha()
+opening_bg3 = pygame.transform.scale(pygame.image.load("image\Background_3.png"), (SCREEN_WIDTH,SCREEN_HEIGHT)).convert_alpha()
+
 # images
 player1_off_arr = []
 player1_on_arr = []
@@ -406,6 +407,17 @@ if (LOADING_SCREEN):
     check_right_in_progress = False
     check_left_in_progress  = False
     pygame.event.clear()
+
+    screen.blit(opening_bg1, (0, 0))
+    pygame.display.flip()
+    pygame.time.wait(1000)
+    screen.blit(opening_bg2, (0, 0))
+    pygame.display.flip()
+    pygame.time.wait(1000)
+    screen.blit(opening_bg3, (0, 0))
+    pygame.display.flip()
+    pygame.time.wait(1000)
+
 
     while True:
         event = pygame.event.wait()
