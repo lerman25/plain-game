@@ -6,6 +6,7 @@ import random
 import keyboard
 import socket
 import threading
+import math
 import errno
 #import Player2Control
 from socket import error as socket_error
@@ -41,7 +42,11 @@ GROUND_PENALTY = 10
 NUM_OF_PLAYER_IMGS = 10
 CLOUDS = True
 LOADING_SCREEN = True
-BACKGROUND_DELAY = 5
+MAX_ASTROID_SPEED = 20
+GAME_STAGE = 2 #Each game stage will add to speed of coins & Astroids.
+game_ticks_counter = 0
+GAME_LEVEL_UP_THRESHOLD = 3000
+STAGE_SPEEDUP = 2
 
 def drawText(text, font, surface, x, y):
     textobj = font.render(text, 1, TEXTCOLOR)
@@ -113,7 +118,7 @@ def StartServer():
            for key in ['a', 'w', 'd']:
                # if keyboard.is_pressed(key):
                     keyboard.release(key)
-                    print("releasew")
+                    #print("releasew")
                     release_counter += 1
 
 
@@ -178,7 +183,7 @@ class Player(pygame.sprite.Sprite):
     def update(self, pressed_keys, player2=False):
         if not player2:
             if pressed_keys[K_UP]:
-                self.rect.move_ip(0, -5)
+                self.rect.move_ip(0, -5 - GAME_STAGE)
                 self.fire_is_on = True
                 # self.state = max(0, self.state - 1)
                 self.state = max(0, self.state - 1)
@@ -186,16 +191,16 @@ class Player(pygame.sprite.Sprite):
                 # move_up_sound.play()
             else:
                 # if pressed_keys[K_DOWN]:
-                self.rect.move_ip(0, 5)
+                self.rect.move_ip(0, 5 + GAME_STAGE)
                 self.fire_is_on = False
                 # self.state = max(9, self.state + 1)
                 self.state = min(self.state + 1, NUM_OF_PLAYER_IMGS - 1)
                 # print('state is ' + str(self.state))
                 # move_down_sound.play()
             if pressed_keys[K_LEFT]:
-                self.rect.move_ip(-5, 0)
+                self.rect.move_ip(-5 - GAME_STAGE, 0)
             if pressed_keys[K_RIGHT]:
-                self.rect.move_ip(5, 0)
+                self.rect.move_ip(5 + GAME_STAGE, 0)
             # update the player surface and rectangle
             if self.fire_is_on:
                 self.surf = player1_on_arr[self.state]
@@ -252,12 +257,13 @@ class Enemy(pygame.sprite.Sprite):
                 random.randint(0, SCREEN_HEIGHT),
             )
         )
-        self.speed = random.randint(5, 20)
+        self.speed = random.randint(2, MAX_ASTROID_SPEED)
 
     # Move the enemy based on speed
     # Remove it when it passes the left edge of the screen
     def update(self):
-        self.rect.move_ip(-self.speed, 0)
+        speed_delta = random.randint(0,GAME_STAGE)
+        self.rect.move_ip(-self.speed - speed_delta, 0)
         if self.rect.right < 0:
             self.kill()
 
@@ -274,6 +280,7 @@ class BitCoin(pygame.sprite.Sprite):
         # self.surf.set_colorkey((255, 255, 255), RLEACCEL)
         # The starting position is randomly generated
         self.coin_size = bitcoin_size
+        self.speed = random.randint(5, 20)
         self.rect = self.surf.get_rect(
             center=(
                 random.randint(SCREEN_WIDTH + 20, SCREEN_WIDTH + 100),
@@ -287,7 +294,8 @@ class BitCoin(pygame.sprite.Sprite):
     # Move the cloud based on a constant speed
     # Remove it when it passes the left edge of the screen
     def update(self):
-        self.rect.move_ip(-5, 0)
+        speed_delta = random.randint(0, GAME_STAGE)
+        self.rect.move_ip(-self.speed - speed_delta , 0)
         if self.rect.right < 0:
             self.kill()
 
@@ -319,6 +327,7 @@ class Cloud(pygame.sprite.Sprite):
         super(Cloud, self).__init__()
         self.surf = pygame.image.load("image/cloud.png").convert()
         self.surf.set_colorkey((0, 0, 0), RLEACCEL)
+        self.speed = random.randint(5,15)
         # The starting position is randomly generated
         self.rect = self.surf.get_rect(
             center=(
@@ -330,7 +339,7 @@ class Cloud(pygame.sprite.Sprite):
     # Move the cloud based on a constant speed
     # Remove the cloud when it passes the left edge of the screen
     def update(self):
-        self.rect.move_ip(-5, 0)
+        self.rect.move_ip(-self.speed, 0)
         if self.rect.right < 0:
             self.kill()
 
@@ -392,14 +401,14 @@ for i in range(NUM_OF_PLAYER_IMGS):
 
 # Create custom events for adding a new enemy and cloud
 ADDENEMY = pygame.USEREVENT + 1
-pygame.time.set_timer(ADDENEMY, 2000)
+pygame.time.set_timer(ADDENEMY, max(1, math.ceil(4800/GAME_STAGE)))
 if CLOUDS:
     ADDCLOUD = pygame.USEREVENT + 2
     pygame.time.set_timer(ADDCLOUD, 1000)
 ADDBITCOIN = pygame.USEREVENT + 3
 KEYLEFT_EVENT = pygame.USEREVENT + 4
 KEYRIGHT_EVENT = pygame.USEREVENT + 5
-pygame.time.set_timer(ADDBITCOIN, 1000)
+pygame.time.set_timer(ADDBITCOIN, (1000 + 350 * GAME_STAGE))
 
 # create needed items
 
@@ -462,14 +471,6 @@ key_rel = 0
 last = None
 countdown = 6
 if (LOADING_SCREEN):
-    completed_right         = False
-    completed_left          = False
-    completed_up            = False
-    check_up_in_progress    = True
-    check_right_in_progress = False
-    check_left_in_progress  = False
-    pygame.event.clear()
-
     screen.blit(opening_bg1, (0, 0))
     pygame.display.flip()
     pygame.time.wait(1000)
@@ -492,6 +493,11 @@ if (LOADING_SCREEN):
 # drawText(str("IGNITION!"), font, screen, (SCREEN_WIDTH/2)-100, (SCREEN_HEIGHT/4)+50*(6-countdown))
 
 while running:
+    game_ticks_counter += 1
+    if game_ticks_counter >= GAME_LEVEL_UP_THRESHOLD:
+        GAME_LEVEL_UP_THRESHOLD = math.ceil(GAME_LEVEL_UP_THRESHOLD/2)
+        GAME_STAGE = max(5, GAME_STAGE+ STAGE_SPEEDUP) #max threshold to stage of the game
+
     for event in pygame.event.get():
         # Did the user hit a key?
         if event.type == KEYDOWN:
