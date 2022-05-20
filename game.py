@@ -1,12 +1,13 @@
 # Import the pygame module
 import pygame
-
+import time
 # Import random for random numbers
 import random
 import keyboard
 import socket
 import threading
 import Player2Control
+
 
 # Import pygame.locals for easier access to key coordinates
 # Updated to conform to flake8 and black standards
@@ -80,6 +81,8 @@ UDPServerSocket.bind((localIP, localPort))
 #listening thread
 
 def StartServer():
+    while not running:
+        time.sleep(0.1)
     while running:
         bytesAddressPair = UDPServerSocket.recvfrom(bufferSize)
         message = bytesAddressPair[0]
@@ -91,10 +94,14 @@ def StartServer():
 
         print(clientMsg)
         print(clientIP)
+
+
+def CloseSocket():
     print("closing socket")
     UDPServerSocket.close()
 
-# listening_thread = threading.Thread(target=StartServer)
+listening_thread = threading.Thread(target=StartServer)
+closesocket_thread = threading.Thread(target=CloseSocket)
 # Define the Player object extending pygame.sprite.Sprite
 # Instead of a surface, we use an image for a better looking sprite
 class Player(pygame.sprite.Sprite):
@@ -419,7 +426,7 @@ blast_off_sound.set_volume(1)
 # Variable to keep our main loop running
 running = True
 
-# listening_thread.start()
+listening_thread.start()
 
 
 
@@ -498,11 +505,11 @@ while running:
             # Was it the Escape key? If so, stop the loop
             if event.key == K_ESCAPE:
                 running = False
-
+                closesocket_thread.start()
         # Did the user click the window close button? If so, stop the loop
         elif event.type == QUIT:
             running = False
-
+            closesocket_thread.start()
         # Should we add a new enemy?
         elif event.type == ADDENEMY and allowaddenemy:
             # Create the new enemy, and add it to our sprite groups
@@ -657,7 +664,7 @@ while running:
 
     # Ensure we maintain a 30 frames per second rate
     clock.tick(30)
-
+closesocket_thread.join()
 # At this point, we're done, so we can stop and quit the mixer
 pygame.mixer.music.stop()
 pygame.mixer.quit()
